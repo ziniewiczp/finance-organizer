@@ -1,0 +1,24 @@
+{
+  "name": "finance-organizer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "concurrently \"cd server && npm start\" \"cd client && npm start\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ziniewiczp/finance-organizer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ziniewiczp/finance-organizer/issues"
+  },
+  "homepage": "https://github.com/ziniewiczp/finance-organizer#readme",
+  "dependencies": {
+    "concurrently": "^5.0.0"
+  }
+}
