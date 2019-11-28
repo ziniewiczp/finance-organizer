@@ -1,51 +1,88 @@
 const express = require("express");
-const bodyParser = require("body-parser");
+const graphqlHTTP = require("express-graphql");
+const graphql = require('graphql');
 const cors = require("cors");
 const { pool } = require("./config");
 
+const expenseType = new graphql.GraphQLObjectType({
+    name: "Expense",
+    fields: {
+        id: { type: graphql.GraphQLID },
+        title: { type: graphql.GraphQLString },
+        sum: { type: graphql.GraphQLString }
+    }
+});
+
+const queryType = new graphql.GraphQLObjectType({
+    name: "Query",
+    fields: {
+        expenses: {
+            type: new graphql.GraphQLList(expenseType),
+            args: {},
+            resolve: (parent, args) => {
+                return new Promise((resolve, reject) => {
+                    pool.query("SELECT * FROM expenses", (error, results) => {
+                        if (error) {
+                            reject(error);
+                        }
+                        resolve(results.rows);
+                    });
+                });
+            }
+        }
+    }
+});
+
+const mutationType = new graphql.GraphQLObjectType({
+    name: "Mutation",
+    fields: {
+        addExpense: {
+            type: expenseType,
+            args: {
+                title: { type: graphql.GraphQLString },
+                sum: { type: graphql.GraphQLString }
+            },
+            resolve: (parent, args) => {
+                return new Promise((resolve, reject) => {
+                    pool.query("INSERT INTO expenses (title, sum) VALUES ($1, $2)", [args.title, args.sum], error => {
+                        if (error) {
+                            reject(error);
+                        }
+
+                        resolve();
+                    });
+                });
+            }
+        },
+
+        deleteExpense: {
+            type: expenseType,
+            args: {
+                id: { type: graphql.GraphQLID }
+            },
+            resolve: (parent, args) => {
+                return new Promise((resolve, reject) => {
+                    pool.query("DELETE FROM expenses WHERE id = $1", [args.id], error => {
+                        if (error) {
+                            reject(error);
+                        }
+
+                        resolve();
+                    });
+                });
+            }
+        }
+    }
+})
+
+const schema = new graphql.GraphQLSchema({ query: queryType, mutation: mutationType });
+
 const app = express();
-
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
-
-const getExpenses = (request, response) => {
-    pool.query("SELECT * FROM expenses", (error, results) => {
-        if(error) { 
-            return response.json({ success: false, data: error });
-        }
-        
-        return response.json({ success: true, data: results.rows });
-    });
-}
-
-const addExpense = (request, response) => {
-    const { title, sum } = request.body;
-
-    pool.query("INSERT INTO expenses (title, sum) VALUES ($1, $2)", [title, sum], error => {
-        if(error) { 
-            return response.json({ success: false, data: error });
-        }
-        
-        return response.json({ success: true, message: "Expense added." });
-    });
-}
-
-const deleteExpense = (request, response) => {
-    const id = request.params.id;
-
-    pool.query("DELETE FROM expenses WHERE id = $1", [id], (error, results) => {
-        if(error) {
-            return response.json({ success: false, data: error });
-        }
-        
-        return response.json({ success: true, message: "Expense deleted." });
-    });
-}
-
-app.get("/expenses", getExpenses)
-    .post("/expenses", addExpense)
-    .delete("/expenses/:id", deleteExpense);
+app.use('/graphql', graphqlHTTP({
+    schema: schema,
+    graphiql: true,
+}));
 
 app.listen((process.env.PORT || 3002), () => {
     console.log("Server listening");

@@ -28,39 +28,30 @@ class App extends Component {
     }
 
     getDataFromDb = () => {
-        fetch('http://localhost:3002/expenses')
-            .then((data) => data.json())
-            .then((res) => this.setState({ data: res.data }));
-    };
-
-    putDataToDB = (title, sum) => {
-        const idToBeAdded = (this.state.data) ? this.state.data.length : 0;
-
-        axios.post('http://localhost:3002/expenses', {
-            id: idToBeAdded,
-            title: title,
-            sum: sum
+        axios({
+            url: "http://localhost:3002/graphql",
+            method: "post",
+            data: { query: `{ expenses { id title sum } }` }
+        }).then((result) => {
+            this.setState({ data: result.data.data.expenses });
         });
     };
 
-    deleteFromDB = (idToDelete) => {
-        axios.delete('http://localhost:3002/expenses/' + idToDelete, {});
+    putDataToDB = (title, sum) => {
+        axios({
+            url: "http://localhost:3002/graphql",
+            method: "post",
+            data: { query: `mutation { addExpense(title: "${title}", sum: "${sum}") { title sum } }` }
+        });
     };
 
-    // updateDB = (idToUpdate, updateToApply) => {
-    //   let objIdToUpdate = null;
-    //   parseInt(idToUpdate);
-    //   this.state.data.forEach((dat) => {
-    //     if (dat.id == idToUpdate) {
-    //       objIdToUpdate = dat._id;
-    //     }
-    //   });
-
-    //   axios.post('http://localhost:3001/api/updateData', {
-    //     id: objIdToUpdate,
-    //     update: { message: updateToApply },
-    //   });
-    // };
+    deleteFromDB = (id) => {
+        axios({
+            url: "http://localhost:3002/graphql",
+            method: "post",
+            data: { query: `mutation { deleteExpense(id: ${id}) { id } }` }
+        });
+    };
 
     render() {
         const { data } = this.state;
@@ -73,7 +64,7 @@ class App extends Component {
                         <th>Sum</th>
                         <th></th>
                     </tr>
-                    {!data || data.length <= 0
+                    {!data
                         ? 'No expenses added.'
                         : data.map((dat) => (
                             <tr>
@@ -82,26 +73,26 @@ class App extends Component {
                                 <td>{dat.sum}</td>
                                 <td><button onClick={() => this.deleteFromDB(dat.id)}>Delete</button></td>
                             </tr>
-                ))}
+                        ))}
                 </table>
-            <div style={{ margin: "1rem" }}>
-                <input
-                    type="text"
-                    onChange={(e) => this.setState({ title: e.target.value })}
-                    placeholder="Title..."
-                    style={{ width: '200px' }}
-                />
-                <input
-                    style={{ margin: "0.2rem" }}
-                    type="text"
-                    onChange={(e) => this.setState({ sum: e.target.value })}
-                    placeholder="Sum..."
-                    style={{ width: '100px' }}
-                />
-                <button style={{ margin: "0.2rem" }} onClick={() => this.putDataToDB(this.state.title, this.state.sum)}>
-                    Add
+                <div style={{ margin: "1rem" }}>
+                    <input
+                        type="text"
+                        onChange={(e) => this.setState({ title: e.target.value })}
+                        placeholder="Title..."
+                        style={{ width: '200px' }}
+                    />
+                    <input
+                        style={{ margin: "0.2rem" }}
+                        type="text"
+                        onChange={(e) => this.setState({ sum: e.target.value })}
+                        placeholder="Sum..."
+                        style={{ width: '100px' }}
+                    />
+                    <button style={{ margin: "0.2rem" }} onClick={() => this.putDataToDB(this.state.title, this.state.sum)}>
+                        Add
                     </button>
-            </div>
+                </div>
             </div >
         );
     }
