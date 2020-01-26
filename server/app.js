@@ -55,6 +55,26 @@ const mutationType = new graphql.GraphQLObjectType({
             }
         },
 
+        updateExpense: {
+            type: expenseType,
+            args: {
+                id: { type: graphql.GraphQLID },
+                title: { type: graphql.GraphQLString },
+                sum: { type: graphql.GraphQLString }
+            },
+            resolve: (parent, args) => {
+                return new Promise((resolve, reject) => {
+                    pool.query("UPDATE expenses SET title = $1, sum = $2 WHERE id = $3", [args.title, args.sum, args.id], error => {
+                        if (error) {
+                            reject(error);
+                        }
+
+                        resolve();
+                    });
+                });
+            }
+        },
+
         deleteExpense: {
             type: expenseType,
             args: {
