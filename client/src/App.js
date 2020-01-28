@@ -9,7 +9,8 @@ class App extends Component {
         intervalIsSet: false,
         idToDelete: null,
         idToUpdate: null,
-        objectToUpdate: null,
+        titleToUpdate: null,
+        sumToUpdate: null,
         showEditModal : false,
     };
 
@@ -49,21 +50,25 @@ class App extends Component {
         // TODO: add button -> modal (?)
     };
 
-    showEditModal = (id, title, sum) => {
-        this.setState({ showEditModal: true, idToUpdate: id, title: title, sum: sum });
+    showEditModal = (item) => {
+        this.setState({ showEditModal: true, idToUpdate: item.id, titleToUpdate: item.title, sumToUpdate: item.sum }, () => {
+            document.getElementById("editTitleInput").value = item.title;
+            document.getElementById("editSumInput").value = item.sum;
+        });
     };
 
-    hideEditModal = () => {
+    hideEditModal = () => {        
         this.setState({ showEditModal: false });
     };
 
     updateDataInDB = (id, title, sum) => {
-        this.hideEditModal();
-
         axios({
             url: "http://localhost:3002/graphql",
             method: "post",
             data: { query: `mutation { updateExpense(id: "${id}", title: "${title}", sum: "${sum}") { id title sum } }` }
+        
+        }).then(result => {
+            this.hideEditModal();
         });
     };
 
@@ -93,7 +98,7 @@ class App extends Component {
                                 <td>{dat.id}</td>
                                 <td>{dat.title}</td>
                                 <td>{dat.sum}</td>
-                                <td><button onClick={ () => this.showEditModal(dat.id, dat.title, dat.sum) }>Edit</button></td>
+                                <td><button onClick={ () => this.showEditModal(dat) }>Edit</button></td>
                                 <td><button onClick={ () => this.deleteFromDB(dat.id) }>Delete</button></td>
                             </tr>
                         ))}
@@ -121,19 +126,19 @@ class App extends Component {
                     <p>Edit expense:</p>
                     <div style={{ margin: "1rem" }}>
                     <input
+                        id="editTitleInput"
                         type="text"
-                        onChange={(e) => this.setState({ title: e.target.value })}
-                        defaultValue={this.state.title}
+                        onChange={(e) => this.setState({ titleToUpdate: e.target.value })}
                         style={{ width: '200px' }}
                     />
                     <input
+                        id="editSumInput"
                         style={{ margin: "0.2rem" }}
                         type="text"
-                        onChange={(e) => this.setState({ sum: e.target.value })}
-                        defaultValue={this.state.sum}
+                        onChange={(e) => this.setState({ sumToUpdate: e.target.value })}
                         style={{ width: '100px' }}
                     />
-                    <button style={{ margin: "0.2rem" }} onClick={() => this.updateDataInDB(this.state.idToUpdate, this.state.title, this.state.sum)}>
+                    <button style={{ margin: "0.2rem" }} onClick={() => this.updateDataInDB(this.state.idToUpdate, this.state.titleToUpdate, this.state.sumToUpdate) }>
                         Edit
                     </button>
                 </div>
