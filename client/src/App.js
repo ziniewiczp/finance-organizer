@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import axios from 'axios';
+import Modal from "./components/Modal"
 
+// TODO: Przepisać na hooks
 class App extends Component {
     state = {
         data: [],
@@ -147,22 +149,5 @@ class App extends Component {
         );
     }
 }
-
-const Modal = ({ handleClose, show, children }) => {
-    const showHideClassName = show ? 'modal display-block' : 'modal display-none';
-  
-    return (
-      <div className={showHideClassName}>
-        <section className='modal-main'>
-          {children}
-          <button
-            onClick={handleClose}
-          >
-            Close
-          </button>
-        </section>
-      </div>
-    );
-  };
 
 export default App;
