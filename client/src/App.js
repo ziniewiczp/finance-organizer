@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Axios from "axios";
+import callServer from "./services/ExpensesService";
 // import Modal from "./components/Modal"
 
 const App = () => {
@@ -8,32 +8,28 @@ const App = () => {
     const [newExpenseSum, setNewExpenseSum] = useState();
 
     const getExpenses = () => {
-        Axios({
-            url: "http://localhost:3002/graphql",
-            method: "post",
-            data: { query: `{ expenses { id title sum } }` }
-        }).then((response) => {
-            setExpenses(response.data.data.expenses);
-        });
+        callServer(`{ expenses { id title sum } }`)
+            .then((response) => setExpenses(response.data.data.expenses));
     };
-
-    useEffect(getExpenses, []);
 
     const addExpense = (event) => {
-        // TODO: add form validation
         event.preventDefault();
-        Axios({
-            url: "http://localhost:3002/graphql",
-            method: "post",
-            data: { query: `mutation { addExpense(title: "${newExpenseTitle}", sum: "${newExpenseSum}") { title sum } }` }
-        }).then(response => {
-            // TODO: find out if it's possible to return newly created object
-            setExpenses(expenses.concat({ title: newExpenseTitle, sum: newExpenseSum }));
+        callServer(`mutation { addExpense(title: "${newExpenseTitle}", sum: "${newExpenseSum}") { title sum } }`)
+            .then(() => {
+                // TODO: find out if it's possible to return newly created object
+                setExpenses(expenses.concat({ title: newExpenseTitle, sum: newExpenseSum }));
 
-            setNewExpenseTitle("");
-            setNewExpenseSum("");
-        });
+                setNewExpenseTitle("");
+                setNewExpenseSum("");
+            });
     };
+
+    const deleteExpense = (id) => {
+        callServer(`mutation { deleteExpense(id: ${id}) { id } }`)
+            .then(() => {
+                setExpenses(expenses.filter(expense => expense.id !== id));
+            });
+    }
 
     const handleNewExpensTitleChange = (event) => {
         setNewExpenseTitle(event.target.value);
@@ -41,16 +37,6 @@ const App = () => {
 
     const handleNewExpensSumChange = (event) => {
         setNewExpenseSum(event.target.value);
-    }
-
-    const deleteExpense = (id) => {
-        Axios({
-            url: "http://localhost:3002/graphql",
-            method: "post",
-            data: { query: `mutation { deleteExpense(id: ${id}) { id } }` }
-        }).then(() => {
-            setExpenses(expenses.filter(expense => expense.id !== id));
-        });
     }
 
     //     showEditModal = (item) => {
@@ -74,6 +60,8 @@ const App = () => {
     //             this.hideEditModal();
     //         });
     //     };
+
+    useEffect(getExpenses, []);
 
     return (
         <div>
