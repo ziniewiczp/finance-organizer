@@ -21,7 +21,7 @@ const queryType = new graphql.GraphQLObjectType({
             args: {},
             resolve: (parent, args) => {
                 return new Promise((resolve, reject) => {
-                    pool.query("SELECT * FROM expenses", (error, results) => {
+                    pool.query("SELECT * FROM expenses ORDER BY id", (error, results) => {
                         if (error) {
                             reject(error);
                         }

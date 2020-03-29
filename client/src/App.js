@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from "react";
 import callServer from "./services/ExpensesService";
-// import Modal from "./components/Modal"
+import Modal from "./components/Modal"
 
 const App = () => {
     const [expenses, setExpenses] = useState();
+
     const [newExpenseTitle, setNewExpenseTitle] = useState();
     const [newExpenseSum, setNewExpenseSum] = useState();
+
+    const [editedExpenseId, setEditedExpenseId] = useState();
+    const [editedExpenseTitle, setEditedExpenseTitle] = useState();
+    const [editedExpenseSum, setEditedExpenseSum] = useState();
+
+    const [showEditModal, setShowEditModal] = useState(false);
 
     const getExpenses = () => {
         callServer(`{ expenses { id title sum } }`)
@@ -24,11 +31,41 @@ const App = () => {
             });
     };
 
+    const editExpense = (event) => {
+        event.preventDefault();
+        callServer(`mutation { updateExpense(id: "${editedExpenseId}", title: "${editedExpenseTitle}", sum: "${editedExpenseSum}") { id title sum } }`)
+            .then(() => {
+                setExpenses(expenses.map((expense) => {
+                    if(expense.id === editedExpenseId) {
+                        expense.title = editedExpenseTitle;
+                        expense.sum = editedExpenseSum;
+                    }
+
+                    return expense;
+                }));
+            });
+
+        handleEditModalClose();
+    }
+
     const deleteExpense = (id) => {
         callServer(`mutation { deleteExpense(id: ${id}) { id } }`)
             .then(() => {
                 setExpenses(expenses.filter(expense => expense.id !== id));
             });
+    }
+
+    const displayEditModal = (expense) => {
+        setEditedExpenseId(expense.id);
+        setEditedExpenseTitle(expense.title);
+        setEditedExpenseSum(expense.sum);
+        setShowEditModal(true);
+    }
+    
+    const handleEditModalClose = () => {
+        setShowEditModal(false);
+        setEditedExpenseTitle("");
+        setEditedExpenseSum("");
     }
 
     const handleNewExpensTitleChange = (event) => {
@@ -39,27 +76,13 @@ const App = () => {
         setNewExpenseSum(event.target.value);
     }
 
-    //     showEditModal = (item) => {
-    //         this.setState({ showEditModal: true, idToUpdate: item.id, titleToUpdate: item.title, sumToUpdate: item.sum }, () => {
-    //             document.getElementById("editTitleInput").value = item.title;
-    //             document.getElementById("editSumInput").value = item.sum;
-    //         });
-    //     };
+    const handleEditedExpensTitleChange = (event) => {
+        setEditedExpenseTitle(event.target.value);
+    }
 
-    //     hideEditModal = () => {        
-    //         this.setState({ showEditModal: false });
-    //     };
-
-    //     updateDataInDB = (id, title, sum) => {
-    //         axios({
-    //             url: "http://localhost:3002/graphql",
-    //             method: "post",
-    //             data: { query: `mutation { updateExpense(id: "${id}", title: "${title}", sum: "${sum}") { id title sum } }` }
-
-    //         }).then(result => {
-    //             this.hideEditModal();
-    //         });
-    //     };
+    const handleEditedExpensSumChange = (event) => {
+        setEditedExpenseSum(event.target.value);
+    }
 
     useEffect(getExpenses, []);
 
@@ -82,7 +105,7 @@ const App = () => {
                                 <td>{expense.id}</td>
                                 <td>{expense.title}</td>
                                 <td>{expense.sum}</td>
-                                {/* <td><button onClick={() => this.showEditModal(expense)}>Edit</button></td> */}
+                                <td><button onClick={() => displayEditModal(expense)}>Edit</button></td>
                                 <td><button onClick={() => deleteExpense(expense.id)}>Delete</button></td>
                             </tr>
                         ))}
@@ -106,27 +129,24 @@ const App = () => {
                 </button>
             </form>
 
-            {/* <Modal show={this.state.showEditModal} handleClose={this.hideEditModal}>
+            <Modal show={showEditModal} handleClose={handleEditModalClose}>
                 <p>Edit expense:</p>
-                <div style={{ margin: "1rem" }}>
+                <form onSubmit={editExpense} style={{ margin: "1rem" }}>
                     <input
-                        id="editTitleInput"
-                        type="text"
-                        onChange={(e) => this.setState({ titleToUpdate: e.target.value })}
+                        value={editedExpenseTitle}
+                        onChange={handleEditedExpensTitleChange}
                         style={{ width: '200px' }}
                     />
                     <input
-                        id="editSumInput"
-                        style={{ margin: "0.2rem" }}
-                        type="text"
-                        onChange={(e) => this.setState({ sumToUpdate: e.target.value })}
-                        style={{ width: '100px' }}
+                        value={editedExpenseSum}
+                        onChange={handleEditedExpensSumChange}
+                        style={{ width: "100px", margin: "0.2rem" }}
                     />
-                    <button style={{ margin: "0.2rem" }} onClick={() => this.updateDataInDB(this.state.idToUpdate, this.state.titleToUpdate, this.state.sumToUpdate)}>
+                    <button style={{ margin: "0.2rem" }} type="submit">
                         Edit
                     </button>
-                </div>
-            </Modal> */}
+                </form>
+            </Modal>
         </div>
     );
 }
