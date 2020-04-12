@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import callServer from "./services/ExpensesService";
-import Modal from "./components/Modal"
+import EditExpenseModal from "./components/EditExpenseModal"
 
 const App = () => {
     const [expenses, setExpenses] = useState();
@@ -8,10 +8,7 @@ const App = () => {
     const [newExpenseTitle, setNewExpenseTitle] = useState();
     const [newExpenseSum, setNewExpenseSum] = useState();
 
-    const [editedExpenseId, setEditedExpenseId] = useState();
-    const [editedExpenseTitle, setEditedExpenseTitle] = useState();
-    const [editedExpenseSum, setEditedExpenseSum] = useState();
-
+    const [editedExpense, setEditedExpense] = useState();
     const [showEditModal, setShowEditModal] = useState(false);
 
     const getExpenses = () => {
@@ -26,19 +23,18 @@ const App = () => {
                 // TODO: find out if it's possible to return newly created object
                 setExpenses(expenses.concat({ title: newExpenseTitle, sum: newExpenseSum }));
 
-                setNewExpenseTitle("");
-                setNewExpenseSum("");
+                setNewExpenseTitle(null);
+                setNewExpenseSum(null);
             });
     };
 
-    const editExpense = (event) => {
-        event.preventDefault();
-        callServer(`mutation { updateExpense(id: "${editedExpenseId}", title: "${editedExpenseTitle}", sum: "${editedExpenseSum}") { id title sum } }`)
+    const editExpense = (providedExpense) => {
+        callServer(`mutation { updateExpense(id: "${providedExpense.id}", title: "${providedExpense.title}", sum: "${providedExpense.sum}") { id title sum } }`)
             .then(() => {
                 setExpenses(expenses.map((expense) => {
-                    if(expense.id === editedExpenseId) {
-                        expense.title = editedExpenseTitle;
-                        expense.sum = editedExpenseSum;
+                    if(expense.id === providedExpense.id) {
+                        expense.title = providedExpense.title;
+                        expense.sum = providedExpense.sum;
                     }
 
                     return expense;
@@ -56,32 +52,21 @@ const App = () => {
     }
 
     const displayEditModal = (expense) => {
-        setEditedExpenseId(expense.id);
-        setEditedExpenseTitle(expense.title);
-        setEditedExpenseSum(expense.sum);
+        setEditedExpense(expense);
         setShowEditModal(true);
     }
     
     const handleEditModalClose = () => {
         setShowEditModal(false);
-        setEditedExpenseTitle("");
-        setEditedExpenseSum("");
+        setEditedExpense(null);
     }
 
-    const handleNewExpensTitleChange = (event) => {
+    const handleNewExpenseTitleChange = (event) => {
         setNewExpenseTitle(event.target.value);
     }
 
-    const handleNewExpensSumChange = (event) => {
+    const handleNewExpenseSumChange = (event) => {
         setNewExpenseSum(event.target.value);
-    }
-
-    const handleEditedExpensTitleChange = (event) => {
-        setEditedExpenseTitle(event.target.value);
-    }
-
-    const handleEditedExpensSumChange = (event) => {
-        setEditedExpenseSum(event.target.value);
     }
 
     useEffect(getExpenses, []);
@@ -115,13 +100,13 @@ const App = () => {
                 <input
                     placeholder="Title..."
                     value={newExpenseTitle}
-                    onChange={handleNewExpensTitleChange}
+                    onChange={handleNewExpenseTitleChange}
                     style={{ width: '200px' }}
                 />
                 <input
                     placeholder="Sum..."
                     value={newExpenseSum}
-                    onChange={handleNewExpensSumChange}
+                    onChange={handleNewExpenseSumChange}
                     style={{ width: '100px', margin: "0.2rem" }}
                 />
                 <button style={{ margin: "0.2rem" }} type="submit">
@@ -129,24 +114,12 @@ const App = () => {
                 </button>
             </form>
 
-            <Modal show={showEditModal} handleClose={handleEditModalClose}>
-                <p>Edit expense:</p>
-                <form onSubmit={editExpense} style={{ margin: "1rem" }}>
-                    <input
-                        value={editedExpenseTitle}
-                        onChange={handleEditedExpensTitleChange}
-                        style={{ width: '200px' }}
-                    />
-                    <input
-                        value={editedExpenseSum}
-                        onChange={handleEditedExpensSumChange}
-                        style={{ width: "100px", margin: "0.2rem" }}
-                    />
-                    <button style={{ margin: "0.2rem" }} type="submit">
-                        Edit
-                    </button>
-                </form>
-            </Modal>
+            <EditExpenseModal 
+                show={showEditModal}
+                expense={editedExpense}
+                handleClose={handleEditModalClose}
+                handleEdit={editExpense}
+            />
         </div>
     );
 }
