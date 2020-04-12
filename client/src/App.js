@@ -18,10 +18,9 @@ const App = () => {
 
     const addExpense = (event) => {
         event.preventDefault();
-        callServer(`mutation { addExpense(title: "${newExpenseTitle}", sum: "${newExpenseSum}") { title sum } }`)
-            .then(() => {
-                // TODO: find out if it's possible to return newly created object
-                setExpenses(expenses.concat({ title: newExpenseTitle, sum: newExpenseSum }));
+        callServer(`mutation { addExpense(title: "${newExpenseTitle}", sum: "${newExpenseSum}") { id title sum } }`)
+            .then((response) => {
+                setExpenses(expenses.concat(response.data.data.addExpense));
 
                 setNewExpenseTitle(null);
                 setNewExpenseSum(null);

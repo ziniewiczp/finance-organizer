@@ -44,12 +44,22 @@ const mutationType = new graphql.GraphQLObjectType({
             },
             resolve: (parent, args) => {
                 return new Promise((resolve, reject) => {
-                    pool.query("INSERT INTO expenses (title, sum) VALUES ($1, $2)", [args.title, args.sum], error => {
+                    pool.query("INSERT INTO expenses (title, sum) VALUES ($1, $2) RETURNING (id, title, sum)", [args.title, args.sum], (error, result) => {
                         if (error) {
                             reject(error);
                         }
+                        
+                        const returnedValues = result.rows[0].row
+                            .replace(/([ ( ) " ])/g, "")
+                            .split(",");
 
-                        resolve();
+                        returnedValues[2] += `,${returnedValues.pop()}`;
+                        
+                        resolve({
+                            id: returnedValues[0],
+                            title: returnedValues[1],
+                            sum: returnedValues[2]
+                        });
                     });
                 });
             }
