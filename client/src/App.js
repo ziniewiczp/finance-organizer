@@ -7,33 +7,49 @@ const App = () => {
 
     const [newExpenseTitle, setNewExpenseTitle] = useState();
     const [newExpenseSum, setNewExpenseSum] = useState();
+    const [newExpenseDate, setNewExpenseDate] = useState(new Date().toISOString().slice(0, 10));
 
     const [editedExpense, setEditedExpense] = useState();
     const [showEditModal, setShowEditModal] = useState(false);
 
     const getExpenses = () => {
-        callServer(`{ expenses { id title sum } }`)
+        callServer(`{ expenses { id title sum date } }`)
             .then((response) => setExpenses(response.data.data.expenses));
     };
 
     const addExpense = (event) => {
         event.preventDefault();
-        callServer(`mutation { addExpense(title: "${newExpenseTitle}", sum: "${newExpenseSum}") { id title sum } }`)
+        callServer(`mutation { 
+                addExpense(
+                    title: "${newExpenseTitle}", 
+                    sum: "${newExpenseSum}", 
+                    date: "${newExpenseDate}"
+                ) { id title sum date } 
+            }`)
             .then((response) => {
                 setExpenses(expenses.concat(response.data.data.addExpense));
 
                 setNewExpenseTitle(null);
                 setNewExpenseSum(null);
+                setNewExpenseDate(null);
             });
     };
 
     const editExpense = (providedExpense) => {
-        callServer(`mutation { updateExpense(id: "${providedExpense.id}", title: "${providedExpense.title}", sum: "${providedExpense.sum}") { id title sum } }`)
+        callServer(`mutation { 
+                updateExpense(
+                    id: "${providedExpense.id}", 
+                    title: "${providedExpense.title}", 
+                    sum: "${providedExpense.sum}",
+                    date: "${providedExpense.date}"
+                ) { id title sum } 
+            }`)
             .then(() => {
                 setExpenses(expenses.map((expense) => {
                     if(expense.id === providedExpense.id) {
                         expense.title = providedExpense.title;
                         expense.sum = providedExpense.sum;
+                        expense.date = providedExpense.date;
                     }
 
                     return expense;
@@ -67,6 +83,10 @@ const App = () => {
     const handleNewExpenseSumChange = (event) => {
         setNewExpenseSum(event.target.value);
     }
+    
+    const handleNewExpenseDateChange = (event) => {
+        setNewExpenseDate(event.target.value);
+    }
 
     useEffect(getExpenses, []);
 
@@ -76,6 +96,7 @@ const App = () => {
                 <thead>
                     <tr>
                         <th>ID</th>
+                        <th>Date</th>
                         <th>Title</th>
                         <th>Sum</th>
                         <th></th>
@@ -87,6 +108,7 @@ const App = () => {
                         : expenses.map((expense) => (
                             <tr key={expense.id}>
                                 <td>{expense.id}</td>
+                                <td>{expense.date}</td>
                                 <td>{expense.title}</td>
                                 <td>{expense.sum}</td>
                                 <td><button onClick={() => displayEditModal(expense)}>Edit</button></td>
@@ -107,6 +129,12 @@ const App = () => {
                     value={newExpenseSum}
                     onChange={handleNewExpenseSumChange}
                     style={{ width: '100px', margin: "0.2rem" }}
+                />
+                <input
+                    type="date"
+                    value={newExpenseDate}
+                    onChange={handleNewExpenseDateChange}
+                    style={{ width: '200px', margin: "0.2rem" }}
                 />
                 <button style={{ margin: "0.2rem" }} type="submit">
                     Add

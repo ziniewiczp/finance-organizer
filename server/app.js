@@ -9,7 +9,8 @@ const expenseType = new graphql.GraphQLObjectType({
     fields: {
         id: { type: graphql.GraphQLID },
         title: { type: graphql.GraphQLString },
-        sum: { type: graphql.GraphQLString }
+        sum: { type: graphql.GraphQLString },
+        date: { type: graphql.GraphQLString }
     }
 });
 
@@ -21,10 +22,22 @@ const queryType = new graphql.GraphQLObjectType({
             args: {},
             resolve: (parent, args) => {
                 return new Promise((resolve, reject) => {
-                    pool.query("SELECT * FROM expenses ORDER BY id", (error, results) => {
+                    pool.query(`
+                        SELECT
+                            id,
+                            title,
+                            sum,
+                            date
+                        FROM expenses 
+                        ORDER BY date`, (error, results) => {
                         if (error) {
                             reject(error);
                         }
+                        results.rows.forEach((expense) => {
+                            expense.date.setDate(expense.date.getDate() + 1);
+                            expense.date = expense.date.toISOString().slice(0, 10);
+                        });
+
                         resolve(results.rows);
                     });
                 });
@@ -40,11 +53,12 @@ const mutationType = new graphql.GraphQLObjectType({
             type: expenseType,
             args: {
                 title: { type: graphql.GraphQLString },
-                sum: { type: graphql.GraphQLString }
+                sum: { type: graphql.GraphQLString },
+                date: { type: graphql.GraphQLString }
             },
             resolve: (parent, args) => {
                 return new Promise((resolve, reject) => {
-                    pool.query("INSERT INTO expenses (title, sum) VALUES ($1, $2) RETURNING (id, title, sum)", [args.title, args.sum], (error, result) => {
+                    pool.query("INSERT INTO expenses (title, sum, date) VALUES ($1, $2, $3) RETURNING (id, title, date, sum)", [args.title, args.sum, args.date], (error, result) => {
                         if (error) {
                             reject(error);
                         }
@@ -53,12 +67,13 @@ const mutationType = new graphql.GraphQLObjectType({
                             .replace(/([ ( ) " ])/g, "")
                             .split(",");
 
-                        returnedValues[2] += `,${returnedValues.pop()}`;
+                        returnedValues[3] += `,${returnedValues.pop()}`;
                         
                         resolve({
                             id: returnedValues[0],
                             title: returnedValues[1],
-                            sum: returnedValues[2]
+                            date: returnedValues[2],
+                            sum: returnedValues[3]
                         });
                     });
                 });
@@ -70,11 +85,12 @@ const mutationType = new graphql.GraphQLObjectType({
             args: {
                 id: { type: graphql.GraphQLID },
                 title: { type: graphql.GraphQLString },
-                sum: { type: graphql.GraphQLString }
+                sum: { type: graphql.GraphQLString },
+                date: { type: graphql.GraphQLString }
             },
             resolve: (parent, args) => {
                 return new Promise((resolve, reject) => {
-                    pool.query("UPDATE expenses SET title = $1, sum = $2 WHERE id = $3", [args.title, args.sum, args.id], error => {
+                    pool.query("UPDATE expenses SET title = $1, sum = $2, date = $3 WHERE id = $4", [args.title, args.sum, args.date, args.id], error => {
                         if (error) {
                             reject(error);
                         }
