@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import callServer from "./services/ExpensesService";
 import EditExpenseModal from "./components/EditExpenseModal"
 
+const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
 const App = () => {
     const [expenses, setExpenses] = useState();
 
@@ -11,6 +13,24 @@ const App = () => {
 
     const [editedExpense, setEditedExpense] = useState();
     const [showEditModal, setShowEditModal] = useState(false);
+
+    const [currentMonth, setCurrentMonth] = useState(months[new Date().getMonth()]);
+    const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
+    const changeMonth = (direction) => {
+        let nextMonth = months.indexOf(currentMonth) + direction;
+        if(nextMonth === 12) { 
+            nextMonth = 0;
+            setCurrentYear(currentYear + 1)
+        }
+        
+        if(nextMonth === -1) { 
+            nextMonth = 11;
+            setCurrentYear(currentYear - 1);
+        }
+        
+        setCurrentMonth(months[nextMonth]);
+    }
 
     const getExpenses = () => {
         callServer(`{ expenses { id title sum date } }`)
@@ -92,6 +112,11 @@ const App = () => {
 
     return (
         <div>
+            <div>
+                <button onClick={ () => changeMonth(-1) }>&lt;</button>
+                <span style={{ margin: "2rem" }}>{`${currentMonth} ${currentYear}` }</span>
+                <button onClick={ () => changeMonth(1) }>&gt;</button>
+            </div>
             <table style={{ margin: "1rem" }}>
                 <thead>
                     <tr>
