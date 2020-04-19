@@ -19,7 +19,9 @@ const queryType = new graphql.GraphQLObjectType({
     fields: {
         expenses: {
             type: new graphql.GraphQLList(expenseType),
-            args: {},
+            args: {
+                month: { type: graphql.GraphQLInt }
+            },
             resolve: (parent, args) => {
                 return new Promise((resolve, reject) => {
                     pool.query(`
@@ -28,8 +30,10 @@ const queryType = new graphql.GraphQLObjectType({
                             title,
                             sum,
                             date
-                        FROM expenses 
-                        ORDER BY date`, (error, results) => {
+                        FROM expenses
+                        WHERE EXTRACT(MONTH FROM date) = $1
+                        ORDER BY date`, [args.month], (error, results) => {
+                        
                         if (error) {
                             reject(error);
                         }

@@ -33,7 +33,7 @@ const App = () => {
     }
 
     const getExpenses = () => {
-        callServer(`{ expenses { id title sum date } }`)
+        callServer(`{ expenses( month: ${months.indexOf(currentMonth) + 1} ) { id title sum date } }`)
             .then((response) => setExpenses(response.data.data.expenses));
     };
 
@@ -108,7 +108,7 @@ const App = () => {
         setNewExpenseDate(event.target.value);
     }
 
-    useEffect(getExpenses, []);
+    useEffect(getExpenses, [currentMonth]);
 
     return (
         <div>
