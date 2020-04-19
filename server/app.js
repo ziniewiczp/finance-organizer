@@ -4,13 +4,23 @@ const graphql = require('graphql');
 const cors = require("cors");
 const { pool } = require("./config");
 
+const expenseElementType = new graphql.GraphQLObjectType({
+    name: "ExpenseElement",
+    fields: {
+        id: { type: graphql.GraphQLID },
+        title: { type: graphql.GraphQLString },
+        sum: { type: graphql.GraphQLString },
+    }
+});
+
 const expenseType = new graphql.GraphQLObjectType({
     name: "Expense",
     fields: {
         id: { type: graphql.GraphQLID },
         title: { type: graphql.GraphQLString },
         sum: { type: graphql.GraphQLString },
-        date: { type: graphql.GraphQLString }
+        date: { type: graphql.GraphQLString },
+        expenseElements: { type: graphql.GraphQLList(expenseElementType) }
     }
 });
 
@@ -26,24 +36,48 @@ const queryType = new graphql.GraphQLObjectType({
                 return new Promise((resolve, reject) => {
                     pool.query(`
                         SELECT
-                            id,
-                            title,
-                            sum,
-                            date
-                        FROM expenses
-                        WHERE EXTRACT(MONTH FROM date) = $1
-                        ORDER BY date`, [args.month], (error, results) => {
-                        
-                        if (error) {
-                            reject(error);
-                        }
-                        results.rows.forEach((expense) => {
-                            expense.date.setDate(expense.date.getDate() + 1);
-                            expense.date = expense.date.toISOString().slice(0, 10);
-                        });
+                            e.id as id,
+                            e.title as title,
+                            e.sum as sum,
+                            e.date as date,
+                            ee.id as expense_element_id,
+                            ee.title as expense_element_title,
+                            ee.sum as expense_element_sum
+                        FROM expenses e LEFT OUTER JOIN expense_elements ee ON e.id = ee.expense_id
+                        WHERE EXTRACT(MONTH FROM e.date) = $1
+                        ORDER BY e.date`, [args.month], (error, results) => {
+                            if (error) { reject(error); }
+                            
+                            const expenses = new Map();
+                            results.rows.forEach((expense) => {
+                                expense.date.setDate(expense.date.getDate() + 1);
+                                expense.date = expense.date.toISOString().slice(0, 10);
+                                
+                                if(expenses.has(expense.id)) {
+                                    const existingExpense = expenses.get(expense.id);
+                                    if(expense.expense_element_id) { 
+                                        existingExpense.expenseElements.push({
+                                            id : expense.expense_element_id,
+                                            title: expense.expense_element_title,
+                                            sum : expense.expense_element_sum    
+                                        }); 
+                                    }
+                                
+                                } else {
+                                    expense.expenseElements = (!expense.expense_element_id) 
+                                        ? [] 
+                                        : [{
+                                            id : expense.expense_element_id,
+                                            title: expense.expense_element_title,
+                                            sum : expense.expense_element_sum
+                                        }];
+                                    expenses.set(expense.id, expense); 
+                                }
+                            });
 
-                        resolve(results.rows);
-                    });
+                            resolve(expenses);
+                        }
+                    );
                 });
             }
         }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import callServer from "./services/ExpensesService";
 import EditExpenseModal from "./components/EditExpenseModal"
+import Modal from "./components/Modal"
 
 const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -13,6 +14,9 @@ const App = () => {
 
     const [editedExpense, setEditedExpense] = useState();
     const [showEditModal, setShowEditModal] = useState(false);
+    
+    const [seeMoreExpense, setSeeMoreExpense] = useState();
+    const [showSeeMoreModal, setSeeMoreModal] = useState(false);
 
     const [currentMonth, setCurrentMonth] = useState(months[new Date().getMonth()]);
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -33,7 +37,7 @@ const App = () => {
     }
 
     const getExpenses = () => {
-        callServer(`{ expenses( month: ${months.indexOf(currentMonth) + 1} ) { id title sum date } }`)
+        callServer(`{ expenses( month: ${months.indexOf(currentMonth) + 1} ) { id title sum date expenseElements { id title sum } } }`)
             .then((response) => setExpenses(response.data.data.expenses));
     };
 
@@ -96,6 +100,16 @@ const App = () => {
         setEditedExpense(null);
     }
 
+    const displaySeeMoreModal = (expense) => {
+        setSeeMoreExpense(expense);
+        setSeeMoreModal(true);
+    }
+
+    const handleSeeMoreModalClose = () => {
+        setSeeMoreModal(false);
+        setSeeMoreExpense(null);
+    }
+
     const handleNewExpenseTitleChange = (event) => {
         setNewExpenseTitle(event.target.value);
     }
@@ -136,6 +150,13 @@ const App = () => {
                                 <td>{expense.date}</td>
                                 <td>{expense.title}</td>
                                 <td>{expense.sum}</td>
+                                <td>
+                                    <button 
+                                        disabled={(expense.expenseElements.length === 0) ? true : false}
+                                        onClick={() => displaySeeMoreModal(expense)}>
+                                        See more
+                                    </button>
+                                </td>
                                 <td><button onClick={() => displayEditModal(expense)}>Edit</button></td>
                                 <td><button onClick={() => deleteExpense(expense.id)}>Delete</button></td>
                             </tr>
@@ -172,6 +193,33 @@ const App = () => {
                 handleClose={handleEditModalClose}
                 handleEdit={editExpense}
             />
+
+            <Modal
+                show={showSeeMoreModal}
+                handleClose={handleSeeMoreModalClose}>
+
+                <table style={{ margin: "1rem" }}>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Sum</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {!seeMoreExpense
+                            ? "No expense seleceted"
+                            : seeMoreExpense.expenseElements.map((expense) => (
+                                <tr key={expense.id}>
+                                    <td>{expense.id}</td>
+                                    <td>{expense.title}</td>
+                                    <td>{expense.sum}</td>
+                                </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </Modal>
         </div>
     );
 }
