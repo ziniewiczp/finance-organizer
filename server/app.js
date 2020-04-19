@@ -64,10 +64,8 @@ const mutationType = new graphql.GraphQLObjectType({
                         }
                         
                         const returnedValues = result.rows[0].row
-                            .replace(/([ ( ) " ])/g, "")
+                            .replace(/([ ( ) ])/g, "")
                             .split(",");
-
-                        returnedValues[3] += `,${returnedValues.pop()}`;
                         
                         resolve({
                             id: returnedValues[0],
