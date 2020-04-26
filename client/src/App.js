@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import callServer from "./services/ExpensesService";
 import EditExpenseModal from "./components/EditExpenseModal"
+import AddExpenseModal from "./components/AddExpenseModal";
 
 const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -9,15 +10,13 @@ const App = () => {
 
     const [currentMonthTotal, setCurrentMonthTotal] = useState(0);
 
-    const [newExpenseTitle, setNewExpenseTitle] = useState();
-    const [newExpenseSum, setNewExpenseSum] = useState();
-    const [newExpenseDate, setNewExpenseDate] = useState(new Date().toISOString().slice(0, 10));
+    const [currentMonth, setCurrentMonth] = useState(months[new Date().getMonth()]);
+    const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
+    const [showAddModal, setShowAddModal] = useState(false);
 
     const [editedExpense, setEditedExpense] = useState();
     const [showEditModal, setShowEditModal] = useState(false);
-
-    const [currentMonth, setCurrentMonth] = useState(months[new Date().getMonth()]);
-    const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
     const changeMonth = (direction) => {
         let nextMonth = months.indexOf(currentMonth) + direction;
@@ -41,22 +40,19 @@ const App = () => {
             });
     };
 
-    const addExpense = (event) => {
-        event.preventDefault();
+    const addExpense = (providedExpense) => {
         callServer(`mutation { 
                 addExpense(
-                    title: "${newExpenseTitle}", 
-                    sum: "${newExpenseSum}", 
-                    date: "${newExpenseDate}"
+                    title: "${providedExpense.title}", 
+                    sum: "${providedExpense.sum}", 
+                    date: "${providedExpense.date}"
                 ) { id title sum date } 
             }`)
             .then((response) => {
                 handleExpensesUpdate(expenses.concat(response.data.data.addExpense));
-
-                setNewExpenseTitle(null);
-                setNewExpenseSum(null);
-                setNewExpenseDate(null);
             });
+
+        handleAddModalClose();
     };
 
     const editExpense = (providedExpense) => {
@@ -66,7 +62,7 @@ const App = () => {
                     title: "${providedExpense.title}", 
                     sum: "${providedExpense.sum}",
                     date: "${providedExpense.date}"
-                ) { id title sum } 
+                ) { id title sum date } 
             }`)
             .then(() => {
                 handleExpensesUpdate(expenses.map((expense) => {
@@ -90,26 +86,22 @@ const App = () => {
             });
     }
 
+    const displayAddModal = () => {
+        setShowAddModal(true);
+    }
+    
     const displayEditModal = (expense) => {
         setEditedExpense(expense);
         setShowEditModal(true);
+    }
+
+    const handleAddModalClose = () => {
+        setShowAddModal(false);
     }
     
     const handleEditModalClose = () => {
         setShowEditModal(false);
         setEditedExpense(null);
-    }
-
-    const handleNewExpenseTitleChange = (event) => {
-        setNewExpenseTitle(event.target.value);
-    }
-
-    const handleNewExpenseSumChange = (event) => {
-        setNewExpenseSum(event.target.value);
-    }
-    
-    const handleNewExpenseDateChange = (event) => {
-        setNewExpenseDate(event.target.value);
     }
 
     const handleExpensesUpdate = (updatedExpenses) => {
@@ -160,35 +152,20 @@ const App = () => {
                     </tr>
                 </tfoot>
             </table>
-            <form onSubmit={addExpense} style={{ margin: "1rem" }}>
-                <input
-                    placeholder="Title..."
-                    value={newExpenseTitle}
-                    onChange={handleNewExpenseTitleChange}
-                    style={{ width: '200px' }}
-                />
-                <input
-                    placeholder="Sum..."
-                    value={newExpenseSum}
-                    onChange={handleNewExpenseSumChange}
-                    style={{ width: '100px', margin: "0.2rem" }}
-                />
-                <input
-                    type="date"
-                    value={newExpenseDate}
-                    onChange={handleNewExpenseDateChange}
-                    style={{ width: '200px', margin: "0.2rem" }}
-                />
-                <button style={{ margin: "0.2rem" }} type="submit">
-                    Add
-                </button>
-            </form>
+
+            <button onClick={() => displayAddModal()}>Add new expense</button>
 
             <EditExpenseModal 
                 show={showEditModal}
                 expense={editedExpense}
                 handleClose={handleEditModalClose}
                 handleEdit={editExpense}
+            />
+
+            <AddExpenseModal
+                show={showAddModal}
+                handleClose={handleAddModalClose}
+                handleAdd={addExpense}
             />
         </div>
     );
