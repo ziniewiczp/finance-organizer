@@ -49,6 +49,15 @@ const App = () => {
                 ) { id title sum date } 
             }`)
             .then((response) => {
+                const newExpenseDate = new Date(providedExpense.date);
+                if(newExpenseDate.getMonth() !== months.indexOf(currentMonth)) {
+                    setCurrentMonth(months[newExpenseDate.getMonth()]);
+                }
+
+                if(newExpenseDate.getFullYear() !== currentYear) {
+                    setCurrentYear(newExpenseDate.getFullYear());
+                }
+
                 const updatedExpenses = expenses
                     .concat(response.data.data.addExpense)
                     .sort((a, b) => new Date(a.date) - new Date(b.date));
