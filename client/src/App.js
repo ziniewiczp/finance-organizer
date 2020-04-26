@@ -49,7 +49,10 @@ const App = () => {
                 ) { id title sum date } 
             }`)
             .then((response) => {
-                handleExpensesUpdate(expenses.concat(response.data.data.addExpense));
+                const updatedExpenses = expenses
+                    .concat(response.data.data.addExpense)
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+                handleExpensesUpdate(updatedExpenses);
             });
 
         handleAddModalClose();
