@@ -5,7 +5,9 @@ import EditExpenseModal from "./components/EditExpenseModal"
 const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 const App = () => {
-    const [expenses, setExpenses] = useState();
+    const [expenses, setExpenses] = useState([]);
+
+    const [currentMonthTotal, setCurrentMonthTotal] = useState(0);
 
     const [newExpenseTitle, setNewExpenseTitle] = useState();
     const [newExpenseSum, setNewExpenseSum] = useState();
@@ -34,7 +36,9 @@ const App = () => {
 
     const getExpenses = () => {
         callServer(`{ expenses( month: ${months.indexOf(currentMonth) + 1} ) { id title sum date } }`)
-            .then((response) => setExpenses(response.data.data.expenses));
+            .then((response) => {
+                handleExpensesUpdate(response.data.data.expenses);
+            });
     };
 
     const addExpense = (event) => {
@@ -47,7 +51,7 @@ const App = () => {
                 ) { id title sum date } 
             }`)
             .then((response) => {
-                setExpenses(expenses.concat(response.data.data.addExpense));
+                handleExpensesUpdate(expenses.concat(response.data.data.addExpense));
 
                 setNewExpenseTitle(null);
                 setNewExpenseSum(null);
@@ -65,7 +69,7 @@ const App = () => {
                 ) { id title sum } 
             }`)
             .then(() => {
-                setExpenses(expenses.map((expense) => {
+                handleExpensesUpdate(expenses.map((expense) => {
                     if(expense.id === providedExpense.id) {
                         expense.title = providedExpense.title;
                         expense.sum = providedExpense.sum;
@@ -82,7 +86,7 @@ const App = () => {
     const deleteExpense = (id) => {
         callServer(`mutation { deleteExpense(id: ${id}) { id } }`)
             .then(() => {
-                setExpenses(expenses.filter(expense => expense.id !== id));
+                handleExpensesUpdate(expenses.filter(expense => expense.id !== id));
             });
     }
 
@@ -108,6 +112,13 @@ const App = () => {
         setNewExpenseDate(event.target.value);
     }
 
+    const handleExpensesUpdate = (updatedExpenses) => {
+        setExpenses(updatedExpenses);
+        setCurrentMonthTotal(
+            updatedExpenses.reduce((acc, current) => acc + Number(current.sum), 0)
+        );
+    }
+
     useEffect(getExpenses, [currentMonth]);
 
     return (
@@ -124,13 +135,11 @@ const App = () => {
                         <th>Date</th>
                         <th>Title</th>
                         <th>Sum</th>
-                        <th></th>
+                        <th colspan="2"></th>
                     </tr>
                 </thead>
                 <tbody>
-                    {!expenses
-                        ? 'No expenses added.'
-                        : expenses.map((expense) => (
+                    {expenses.map((expense) => (
                             <tr key={expense.id}>
                                 <td>{expense.id}</td>
                                 <td>{expense.date}</td>
@@ -139,8 +148,17 @@ const App = () => {
                                 <td><button onClick={() => displayEditModal(expense)}>Edit</button></td>
                                 <td><button onClick={() => deleteExpense(expense.id)}>Delete</button></td>
                             </tr>
-                        ))}
+                        )
+                    )}
                 </tbody>
+                <tfoot>
+                    <tr>
+                        <td>Total</td>
+                        <td colspan="2"></td>
+                        <td>{currentMonthTotal.toFixed(2)}</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
             </table>
             <form onSubmit={addExpense} style={{ margin: "1rem" }}>
                 <input
