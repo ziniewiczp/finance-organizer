@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import callServer from "./services/ExpensesService";
-import EditExpenseModal from "./components/EditExpenseModal"
-import AddExpenseModal from "./components/AddExpenseModal";
+import AddEditExpenseModal from "./components/AddEditExpenseModal";
 
 const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -13,10 +12,8 @@ const App = () => {
     const [currentMonth, setCurrentMonth] = useState(months[new Date().getMonth()]);
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
-    const [showAddModal, setShowAddModal] = useState(false);
-
     const [editedExpense, setEditedExpense] = useState();
-    const [showEditModal, setShowEditModal] = useState(false);
+    const [showAddEditModal, setShowAddEditModal] = useState(false);
 
     const changeMonth = (direction) => {
         let nextMonth = months.indexOf(currentMonth) + direction;
@@ -64,7 +61,7 @@ const App = () => {
                 handleExpensesUpdate(updatedExpenses);
             });
 
-        handleAddModalClose();
+        handleAddEditModalClose();
     };
 
     const editExpense = (providedExpense) => {
@@ -88,7 +85,7 @@ const App = () => {
                 }));
             });
 
-        handleEditModalClose();
+        handleAddEditModalClose();
     }
 
     const deleteExpense = (id) => {
@@ -98,21 +95,17 @@ const App = () => {
             });
     }
 
-    const displayAddModal = () => {
-        setShowAddModal(true);
+    const saveModalData = (expense) => {
+        (expense.id) ? editExpense(expense) : addExpense(expense);
     }
     
-    const displayEditModal = (expense) => {
+    const displayAddEditModal = (expense = null) => {
         setEditedExpense(expense);
-        setShowEditModal(true);
-    }
-
-    const handleAddModalClose = () => {
-        setShowAddModal(false);
+        setShowAddEditModal(true);
     }
     
-    const handleEditModalClose = () => {
-        setShowEditModal(false);
+    const handleAddEditModalClose = () => {
+        setShowAddEditModal(false);
         setEditedExpense(null);
     }
 
@@ -149,7 +142,7 @@ const App = () => {
                                 <td>{expense.date}</td>
                                 <td>{expense.title}</td>
                                 <td>{expense.sum}</td>
-                                <td><button onClick={() => displayEditModal(expense)}>Edit</button></td>
+                                <td><button onClick={() => displayAddEditModal(expense)}>Edit</button></td>
                                 <td><button onClick={() => deleteExpense(expense.id)}>Delete</button></td>
                             </tr>
                         )
@@ -165,19 +158,13 @@ const App = () => {
                 </tfoot>
             </table>
 
-            <button onClick={() => displayAddModal()}>Add new expense</button>
+            <button onClick={() => displayAddEditModal()}>Add new expense</button>
 
-            <EditExpenseModal 
-                show={showEditModal}
+            <AddEditExpenseModal 
+                show={showAddEditModal}
                 expense={editedExpense}
-                handleClose={handleEditModalClose}
-                handleEdit={editExpense}
-            />
-
-            <AddExpenseModal
-                show={showAddModal}
-                handleClose={handleAddModalClose}
-                handleAdd={addExpense}
+                handleClose={handleAddEditModalClose}
+                handleSave={saveModalData}
             />
         </div>
     );

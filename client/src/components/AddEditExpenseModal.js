@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Modal from "./Modal";
 
-const EditExpenseModal = ({ show, expense, handleClose, handleEdit }) => {
+const AddEditExpenseModal = ({ show, expense, handleClose, handleSave }) => {
     const [newTitle, setNewTitle] = useState("");
     const [newSum, setNewSum] = useState("");
     const [newDate, setNewDate] = useState(new Date().toISOString().slice(0, 10));
@@ -20,8 +20,8 @@ const EditExpenseModal = ({ show, expense, handleClose, handleEdit }) => {
 
     const handleSubmit = (event) => {
         event.preventDefault();
-        handleEdit({
-            id : expense.id,
+        handleSave({
+            id : (expense) ? expense.id : null,
             title : newTitle,
             sum : newSum,
             date : newDate
@@ -44,11 +44,13 @@ const EditExpenseModal = ({ show, expense, handleClose, handleEdit }) => {
                 <p>Edit expense:</p>
                 <form onSubmit={handleSubmit} style={{ margin: "1rem" }}>
                     <input
+                        placeholder="Title..."
                         value={newTitle}
                         onChange={handleNewTitleChange}
                         style={{ width: '200px' }}
                     />
                     <input
+                        placeholder="Sum..."
                         value={newSum}
                         onChange={handleNewSumChange}
                         style={{ width: "100px", margin: "0.2rem" }}
@@ -60,7 +62,7 @@ const EditExpenseModal = ({ show, expense, handleClose, handleEdit }) => {
                         style={{ width: '200px', margin: "0.2rem" }}
                     />
                     <button style={{ margin: "0.2rem" }} type="submit">
-                        Edit
+                        Save
                     </button>
                 </form>
             </Modal>
@@ -68,5 +70,5 @@ const EditExpenseModal = ({ show, expense, handleClose, handleEdit }) => {
     );
 };
 
-export default EditExpenseModal;
+export default AddEditExpenseModal;
 
