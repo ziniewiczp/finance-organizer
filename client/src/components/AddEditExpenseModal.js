@@ -29,6 +29,8 @@ const AddEditExpenseModal = ({ show, expense, handleClose, handleSave }) => {
     }
 
     const handleShowChange = () => {
+        document.getElementById("newTitleInputField").focus();
+        
         if(expense) {
             setNewTitle(expense.title);
             setNewSum(expense.sum);
@@ -44,6 +46,7 @@ const AddEditExpenseModal = ({ show, expense, handleClose, handleSave }) => {
                 <p>Edit expense:</p>
                 <form onSubmit={handleSubmit} style={{ margin: "1rem" }}>
                     <input
+                        id="newTitleInputField"
                         placeholder="Title..."
                         value={newTitle}
                         onChange={handleNewTitleChange}
