@@ -62,22 +62,24 @@ const mutationType = new graphql.GraphQLObjectType({
             },
             resolve: (parent, args) => {
                 return new Promise((resolve, reject) => {
-                    pool.query("INSERT INTO expenses (title, sum, date) VALUES ($1, $2, $3) RETURNING (id, title, date, sum)", [args.title, args.sum, args.date], (error, result) => {
-                        if (error) {
-                            reject(error);
-                        }
-                        
-                        const returnedValues = result.rows[0].row
-                            .replace(/([ ( ) ])/g, "")
-                            .split(",");
-                        
-                        resolve({
-                            id: returnedValues[0],
-                            title: returnedValues[1],
-                            date: returnedValues[2],
-                            sum: returnedValues[3]
+                    pool.query(`INSERT INTO expenses (title, sum, date) VALUES ($1, $2, $3) RETURNING (id, title, date, sum)`,
+                        [args.title, args.sum.replace(/,/g, "."), args.date],
+                        (error, result) => {
+                            if (error) {
+                                reject(error);
+                            }
+
+                            const returnedValues = result.rows[0].row
+                                .replace(/([ ( ) ])/g, "")
+                                .split(",");
+
+                            resolve({
+                                id: returnedValues[0],
+                                title: returnedValues[1],
+                                date: returnedValues[2],
+                                sum: returnedValues[3]
+                            });
                         });
-                    });
                 });
             }
         },
@@ -92,13 +94,15 @@ const mutationType = new graphql.GraphQLObjectType({
             },
             resolve: (parent, args) => {
                 return new Promise((resolve, reject) => {
-                    pool.query("UPDATE expenses SET title = $1, sum = $2, date = $3 WHERE id = $4", [args.title, args.sum, args.date, args.id], error => {
-                        if (error) {
-                            reject(error);
-                        }
+                    pool.query("UPDATE expenses SET title = $1, sum = $2, date = $3 WHERE id = $4", 
+                        [args.title, args.sum.replace(/,/g, "."), args.date, args.id],
+                        error => {
+                            if (error) {
+                                reject(error);
+                            }
 
-                        resolve();
-                    });
+                            resolve();
+                        });
                 });
             }
         },
