@@ -31,7 +31,7 @@ const App = () => {
     }
 
     const getExpenses = () => {
-        callServer(`{ expenses( month: ${months.indexOf(currentMonth) + 1} ) { id title sum date } }`)
+        callServer(`{ expenses( month: ${months.indexOf(currentMonth) + 1} ) { id title sum date category { id name } } }`)
             .then((response) => {
                 handleExpensesUpdate(response.data.data.expenses);
             });
@@ -129,16 +129,18 @@ const App = () => {
                 <thead>
                     <tr>
                         <th>ID</th>
+                        <th>Category</th>
                         <th>Date</th>
                         <th>Title</th>
                         <th>Sum</th>
-                        <th colspan="2"></th>
+                        <th colSpan="2"></th>
                     </tr>
                 </thead>
                 <tbody>
                     {expenses.map((expense) => (
                             <tr key={expense.id}>
                                 <td>{expense.id}</td>
+                                <td>{expense.category.name}</td>
                                 <td>{expense.date}</td>
                                 <td>{expense.title}</td>
                                 <td>{expense.sum}</td>
@@ -151,9 +153,9 @@ const App = () => {
                 <tfoot>
                     <tr>
                         <td>Total</td>
-                        <td colspan="2"></td>
+                        <td colSpan="2"></td>
                         <td>{currentMonthTotal.toFixed(2)}</td>
-                        <td colspan="2"></td>
+                        <td colSpan="2"></td>
                     </tr>
                 </tfoot>
             </table>

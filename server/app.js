@@ -4,13 +4,22 @@ const graphql = require('graphql');
 const cors = require("cors");
 const { pool } = require("./config");
 
+const categoryType = new graphql.GraphQLObjectType({
+    name: "Category",
+    fields: {
+        id : { type: graphql.GraphQLID },
+        name: { type: graphql.GraphQLString }
+    }
+});
+
 const expenseType = new graphql.GraphQLObjectType({
     name: "Expense",
     fields: {
         id: { type: graphql.GraphQLID },
         title: { type: graphql.GraphQLString },
         sum: { type: graphql.GraphQLString },
-        date: { type: graphql.GraphQLString }
+        date: { type: graphql.GraphQLString },
+        category: { type: categoryType }
     }
 });
 
@@ -26,20 +35,26 @@ const queryType = new graphql.GraphQLObjectType({
                 return new Promise((resolve, reject) => {
                     pool.query(`
                         SELECT
-                            id,
-                            title,
-                            sum,
-                            date
-                        FROM expenses
-                        WHERE EXTRACT(MONTH FROM date) = $1
-                        ORDER BY date`, [args.month], (error, results) => {
-                        
-                        if (error) {
-                            reject(error);
-                        }
+                            expenses.id AS id,
+                            expenses.title AS title,
+                            expenses.sum AS sum,
+                            expenses.date AS date,
+                            categories.id AS category_id,
+                            categories.name AS category_name
+                        FROM expenses INNER JOIN categories ON expenses.category = categories.id
+                        WHERE EXTRACT(MONTH FROM expenses.date) = $1
+                        ORDER BY expenses.date`, [args.month], (error, results) => {
+
+                        if (error) { reject(error); }
+
                         results.rows.forEach((expense) => {
                             expense.date.setDate(expense.date.getDate() + 1);
                             expense.date = expense.date.toISOString().slice(0, 10);
+
+                            expense.category = {
+                                id : expense.category_id,
+                                name : expense.category_name
+                            }
                         });
 
                         resolve(results.rows);
