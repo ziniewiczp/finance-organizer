@@ -5,6 +5,8 @@ import AddEditExpenseModal from "./components/AddEditExpenseModal";
 const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 const App = () => {
+    const [categories, setCategories] = useState([]);
+
     const [expenses, setExpenses] = useState([]);
 
     const [currentMonthTotal, setCurrentMonthTotal] = useState(0);
@@ -30,6 +32,13 @@ const App = () => {
         setCurrentMonth(months[nextMonth]);
     }
 
+    const getCategories = () => {
+        callServer(`{ categories { id name } }`)
+            .then((response) => {
+                setCategories(response.data.data.categories);
+            });
+    };
+
     const getExpenses = () => {
         callServer(`{ expenses( month: ${months.indexOf(currentMonth) + 1} ) { id title sum date category { id name } } }`)
             .then((response) => {
@@ -42,11 +51,15 @@ const App = () => {
                 addExpense(
                     title: "${providedExpense.title}", 
                     sum: "${providedExpense.sum}", 
-                    date: "${providedExpense.date}"
-                ) { id title sum date } 
+                    date: "${providedExpense.date}",
+                    category: "${providedExpense.category}"
+                ) { id title sum date category { id name } } 
             }`)
             .then((response) => {
-                const newExpenseDate = new Date(providedExpense.date);
+                const newExpense = response.data.data.addExpense;
+                newExpense.category.name = categories[newExpense.category.id - 1].name;
+
+                const newExpenseDate = new Date(newExpense.date);
                 if(newExpenseDate.getMonth() !== months.indexOf(currentMonth)) {
                     setCurrentMonth(months[newExpenseDate.getMonth()]);
                 }
@@ -56,7 +69,7 @@ const App = () => {
                 }
 
                 const updatedExpenses = expenses
-                    .concat(response.data.data.addExpense)
+                    .concat(newExpense)
                     .sort((a, b) => new Date(a.date) - new Date(b.date));
                 handleExpensesUpdate(updatedExpenses);
             });
@@ -70,8 +83,9 @@ const App = () => {
                     id: "${providedExpense.id}", 
                     title: "${providedExpense.title}", 
                     sum: "${providedExpense.sum}",
-                    date: "${providedExpense.date}"
-                ) { id title sum date } 
+                    date: "${providedExpense.date}",
+                    category: "${providedExpense.category}"
+                ) { id title sum date category { id name } } 
             }`)
             .then(() => {
                 handleExpensesUpdate(expenses.map((expense) => {
@@ -79,6 +93,8 @@ const App = () => {
                         expense.title = providedExpense.title;
                         expense.sum = providedExpense.sum;
                         expense.date = providedExpense.date;
+                        expense.category.id = providedExpense.category;
+                        expense.category.name = categories[providedExpense.category - 1].name;
                     }
 
                     return expense;
@@ -116,6 +132,7 @@ const App = () => {
         );
     }
 
+    useEffect(getCategories, []);
     useEffect(getExpenses, [currentMonth]);
 
     return (
@@ -165,6 +182,7 @@ const App = () => {
             <AddEditExpenseModal 
                 show={showAddEditModal}
                 expense={editedExpense}
+                categories={categories}
                 handleClose={handleAddEditModalClose}
                 handleSave={saveModalData}
             />

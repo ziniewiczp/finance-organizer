@@ -61,6 +61,26 @@ const queryType = new graphql.GraphQLObjectType({
                     });
                 });
             }
+        },
+
+        categories : {
+            type: new graphql.GraphQLList(categoryType),
+            args: { },
+            
+            resolve: (parent, args) => {
+                return new Promise((resolve, reject) => {
+                    pool.query(`
+                        SELECT id, name
+                        FROM categories
+                        WHERE user_id = 0 
+                        ORDER BY name`, (error, results) => {
+
+                            if (error) { reject(error); }
+
+                            resolve(results.rows);
+                        });
+                });
+            }
         }
     }
 });
@@ -73,12 +93,13 @@ const mutationType = new graphql.GraphQLObjectType({
             args: {
                 title: { type: graphql.GraphQLString },
                 sum: { type: graphql.GraphQLString },
-                date: { type: graphql.GraphQLString }
+                date: { type: graphql.GraphQLString },
+                category: { type: graphql.GraphQLString }
             },
             resolve: (parent, args) => {
                 return new Promise((resolve, reject) => {
-                    pool.query(`INSERT INTO expenses (title, sum, date) VALUES ($1, $2, $3) RETURNING (id, title, date, sum)`,
-                        [args.title, args.sum.replace(/,/g, "."), args.date],
+                    pool.query(`INSERT INTO expenses (title, sum, date, category) VALUES ($1, $2, $3, $4) RETURNING (id, title, date, sum, category)`,
+                        [args.title, args.sum.replace(/,/g, "."), args.date, args.category],
                         (error, result) => {
                             if (error) {
                                 reject(error);
@@ -92,7 +113,11 @@ const mutationType = new graphql.GraphQLObjectType({
                                 id: returnedValues[0],
                                 title: returnedValues[1],
                                 date: returnedValues[2],
-                                sum: returnedValues[3]
+                                sum: returnedValues[3],
+                                category: {
+                                    id : returnedValues[4],
+                                    name : "" 
+                                }
                             });
                         });
                 });
@@ -105,12 +130,13 @@ const mutationType = new graphql.GraphQLObjectType({
                 id: { type: graphql.GraphQLID },
                 title: { type: graphql.GraphQLString },
                 sum: { type: graphql.GraphQLString },
-                date: { type: graphql.GraphQLString }
+                date: { type: graphql.GraphQLString },
+                category: { type: graphql.GraphQLString }
             },
             resolve: (parent, args) => {
                 return new Promise((resolve, reject) => {
-                    pool.query("UPDATE expenses SET title = $1, sum = $2, date = $3 WHERE id = $4", 
-                        [args.title, args.sum.replace(/,/g, "."), args.date, args.id],
+                    pool.query("UPDATE expenses SET title = $1, sum = $2, date = $3, category = $4 WHERE id = $5", 
+                        [args.title, args.sum.replace(/,/g, "."), args.date, args.category, args.id],
                         error => {
                             if (error) {
                                 reject(error);

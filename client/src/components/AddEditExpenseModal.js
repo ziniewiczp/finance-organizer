@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
+import callServer from "../services/ExpensesService";
 import Modal from "./Modal";
 
-const AddEditExpenseModal = ({ show, expense, handleClose, handleSave }) => {
+const AddEditExpenseModal = ({ show, expense, categories, handleClose, handleSave }) => {
     const [newTitle, setNewTitle] = useState("");
     const [newSum, setNewSum] = useState("");
     const [newDate, setNewDate] = useState(new Date().toISOString().slice(0, 10));
+    const [newCategory, setNewCategory] = useState(0);
 
     const handleNewTitleChange = (event) => {
         setNewTitle(event.target.value);
@@ -18,23 +20,38 @@ const AddEditExpenseModal = ({ show, expense, handleClose, handleSave }) => {
         setNewDate(event.target.value);
     }
 
+    const handleNewCategoryChange = (event) => {
+        setNewCategory(event.target.value);
+    }
+
     const handleSubmit = (event) => {
         event.preventDefault();
+
         handleSave({
             id : (expense) ? expense.id : null,
             title : newTitle,
             sum : newSum,
-            date : newDate
+            date : newDate,
+            category : newCategory
         });
     }
 
     const handleShowChange = () => {
-        document.getElementById("newTitleInputField").focus();
+        if(show) {
+            document.getElementById("newTitleInputField").focus();
+            
+            if(expense) {
+                setNewTitle(expense.title);
+                setNewSum(expense.sum);
+                setNewDate(expense.date);
+                setNewCategory(expense.category.id);
+            }
         
-        if(expense) {
-            setNewTitle(expense.title);
-            setNewSum(expense.sum);
-            setNewDate(expense.date);
+        } else {
+            setNewTitle("");
+            setNewSum("");
+            setNewDate(new Date().toISOString().slice(0, 10));
+            setNewCategory(0);
         }
     }
 
@@ -64,6 +81,17 @@ const AddEditExpenseModal = ({ show, expense, handleClose, handleSave }) => {
                         onChange={handleNewDateChange}
                         style={{ width: '200px', margin: "0.2rem" }}
                     />
+                    <select onChange={handleNewCategoryChange} value={newCategory}>
+                        {categories.map((category) => (
+                            <option
+                                key={category.id}
+                                value={category.id}>
+
+                                {category.name}
+                            </option>
+                            )
+                        )}
+                    </select>
                     <button style={{ margin: "0.2rem" }} type="submit">
                         Save
                     </button>
