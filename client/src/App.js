@@ -39,8 +39,8 @@ const App = () => {
             });
     };
 
-    const getExpenses = () => {
-        callServer(`{ expenses( month: ${months.indexOf(currentMonth) + 1} ) { id title sum date category { id name } } }`)
+    const getExpenses = (month = months.indexOf(currentMonth), year = currentYear) => {
+        callServer(`{ expenses( month: ${month + 1}, year: ${year} ) { id title sum date category { id name } } }`)
             .then((response) => {
                 handleExpensesUpdate(response.data.data.expenses);
             });
@@ -68,10 +68,11 @@ const App = () => {
                     setCurrentYear(newExpenseDate.getFullYear());
                 }
 
-                const updatedExpenses = expenses
-                    .concat(newExpense)
-                    .sort((a, b) => new Date(a.date) - new Date(b.date));
-                handleExpensesUpdate(updatedExpenses);
+                handleExpensesUpdate(
+                    expenses
+                        .concat(newExpense)
+                        .sort((a, b) => new Date(a.date) - new Date(b.date))
+                );
             });
 
         handleAddEditModalClose();
@@ -87,18 +88,40 @@ const App = () => {
                     category: "${providedExpense.category}"
                 ) { id title sum date category { id name } } 
             }`)
-            .then(() => {
-                handleExpensesUpdate(expenses.map((expense) => {
-                    if(expense.id === providedExpense.id) {
-                        expense.title = providedExpense.title;
-                        expense.sum = providedExpense.sum;
-                        expense.date = providedExpense.date;
-                        expense.category.id = providedExpense.category;
-                        expense.category.name = categories[providedExpense.category - 1].name;
-                    }
+            .then((response) => {
+                const editedExpense = response.data.data.updateExpense;
+                const editedExpenseDate = new Date(editedExpense.date);
 
-                    return expense;
-                }));
+                const monthMatches = editedExpenseDate.getMonth() === months.indexOf(currentMonth);
+                const yearMatches = editedExpenseDate.getFullYear() === currentYear;
+
+                if(monthMatches && yearMatches) {
+                    editedExpense.category.name = categories[editedExpense.category.id - 1].name;
+
+                    handleExpensesUpdate(
+                        expenses.map((expense) => {
+                            if(expense.id === editedExpense.id) {
+                                expense.title = editedExpense.title;
+                                expense.sum = editedExpense.sum;
+                                expense.date = editedExpenseDate.toISOString().slice(0, 10);
+                                expense.category.id = editedExpense.category.id;
+                                expense.category.name = editedExpense.category.name;
+                            }
+        
+                            return expense;
+
+                        }).sort((a, b) => new Date(a.date) - new Date(b.date))
+                    );
+                
+                } else {
+                    setCurrentYear(editedExpenseDate.getFullYear());
+                    if(currentMonth !== months[editedExpenseDate.getMonth()]) {
+                        setCurrentMonth(months[editedExpenseDate.getMonth()]);
+                    
+                    } else {
+                        getExpenses(editedExpenseDate.getMonth(), editedExpenseDate.getFullYear());
+                    }
+                }
             });
 
         handleAddEditModalClose();
@@ -170,7 +193,7 @@ const App = () => {
                 <tfoot>
                     <tr>
                         <td>Total</td>
-                        <td colSpan="2"></td>
+                        <td colSpan="3"></td>
                         <td>{currentMonthTotal.toFixed(2)}</td>
                         <td colSpan="2"></td>
                     </tr>

@@ -29,7 +29,8 @@ const queryType = new graphql.GraphQLObjectType({
         expenses: {
             type: new graphql.GraphQLList(expenseType),
             args: {
-                month: { type: graphql.GraphQLInt }
+                month: { type: graphql.GraphQLInt },
+                year: { type: graphql.GraphQLInt }
             },
             resolve: (parent, args) => {
                 return new Promise((resolve, reject) => {
@@ -42,8 +43,8 @@ const queryType = new graphql.GraphQLObjectType({
                             categories.id AS category_id,
                             categories.name AS category_name
                         FROM expenses INNER JOIN categories ON expenses.category = categories.id
-                        WHERE EXTRACT(MONTH FROM expenses.date) = $1
-                        ORDER BY expenses.date`, [args.month], (error, results) => {
+                        WHERE EXTRACT(MONTH FROM expenses.date) = $1 AND EXTRACT(YEAR FROM expenses.date) = $2
+                        ORDER BY expenses.date`, [args.month, args.year], (error, results) => {
 
                         if (error) { reject(error); }
 
@@ -98,7 +99,9 @@ const mutationType = new graphql.GraphQLObjectType({
             },
             resolve: (parent, args) => {
                 return new Promise((resolve, reject) => {
-                    pool.query(`INSERT INTO expenses (title, sum, date, category) VALUES ($1, $2, $3, $4) RETURNING (id, title, date, sum, category)`,
+                    pool.query(`INSERT INTO expenses (title, sum, date, category) 
+                                VALUES ($1, $2, $3, $4) 
+                                RETURNING (id, title, date, sum, category)`,
                         [args.title, args.sum.replace(/,/g, "."), args.date, args.category],
                         (error, result) => {
                             if (error) {
@@ -135,14 +138,30 @@ const mutationType = new graphql.GraphQLObjectType({
             },
             resolve: (parent, args) => {
                 return new Promise((resolve, reject) => {
-                    pool.query("UPDATE expenses SET title = $1, sum = $2, date = $3, category = $4 WHERE id = $5", 
+                    pool.query(`UPDATE expenses 
+                                SET title = $1, sum = $2, date = $3, category = $4 
+                                WHERE id = $5 
+                                RETURNING (id, title, date, sum, category)`, 
                         [args.title, args.sum.replace(/,/g, "."), args.date, args.category, args.id],
-                        error => {
+                        (error, result) => {
                             if (error) {
                                 reject(error);
                             }
 
-                            resolve();
+                            const returnedValues = result.rows[0].row
+                                .replace(/([ ( ) ])/g, "")
+                                .split(",");
+
+                            resolve({
+                                id: returnedValues[0],
+                                title: returnedValues[1],
+                                date: returnedValues[2],
+                                sum: returnedValues[3],
+                                category: {
+                                    id : returnedValues[4],
+                                    name : "" 
+                                }
+                            });
                         });
                 });
             }
