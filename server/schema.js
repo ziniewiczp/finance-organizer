@@ -2,6 +2,16 @@ const { gql } = require('apollo-server-express');
 const { pool } = require("./config");
 
 const typeDefs = gql`
+    type User {
+        id: ID
+        login: String,
+        password: String
+    }
+
+    type AuthPayload {
+        user: User
+    }
+
     type Category {
         id: ID,
         name: String
@@ -16,11 +26,18 @@ const typeDefs = gql`
     }
 
     type Query {
+        currentUser : User,
+
         expenses(month: Int, year: Int): [Expense],
+
         categories: [Category]
     }
 
     type Mutation {
+        logout: Boolean,
+        login(login: String!, password: String!): AuthPayload,
+        signup(login: String!, password: String!): AuthPayload,
+
         addExpense(title: String, sum: String, date: String, category: ID): Expense,
         updateExpense(id: ID, title: String, sum: String, date: String, category: ID): Expense
         deleteExpense(id: ID) : Expense
@@ -29,6 +46,8 @@ const typeDefs = gql`
 
 const resolvers = {
     Query: {
+        currentUser: (parent, args, context) => context.getUser(),
+
         expenses(parent, args, context, info) {
             return new Promise((resolve, reject) => {
                 pool.query(`
@@ -82,6 +101,28 @@ const resolvers = {
     },
 
     Mutation: {
+        logout: (parent, args, context) => context.logout(),
+
+        login: async (parent, { login, password }, context) => {
+            const { user } = await context.authenticate('graphql-local', { login, password });
+            await context.login(user);
+            return { user }
+        },
+
+        signup: async (parent, { login, password }, context) => {
+            const userWithLoginAlreadyExists = await getMatchingUserByLogin(login);
+      
+            if (userWithLoginAlreadyExists && userWithLoginAlreadyExists !== []) {
+                throw new Error('User with login already exists');
+            }
+      
+            const newUser = await addUser(login, password);
+      
+            await context.login(newUser);
+      
+            return { user: newUser };
+        },
+
         addExpense(parent, args, context, info) {
             return new Promise((resolve, reject) => {
                 pool.query(`
@@ -156,5 +197,45 @@ const resolvers = {
         }
     }
 };
+
+const getMatchingUserByLogin = (login) => {
+    return new Promise((resolve, reject) => {
+        pool.query(`
+            SELECT name, password
+            FROM users
+            WHERE login = $1`,
+            [login], 
+            (error, result) => {
+                if (error) { reject(error); }
+
+                resolve(result.rows[0]);
+            }
+        );
+    });
+}
+
+const addUser = (login, password) => {
+    return new Promise((resolve, reject) => {
+        pool.query(`
+            INSERT INTO users (login, password) 
+            VALUES ($1, $2) 
+            RETURNING (id, login, password)`,
+            [login, password],
+            (error, result) => {
+                if (error) { reject(error); }
+
+                const returnedValues = result.rows[0].row
+                    .replace(/([ ( ) ])/g, "")
+                    .split(",");
+
+                resolve({
+                    id: returnedValues[0],
+                    login: returnedValues[1],
+                    password: returnedValues[2]
+                });
+            }
+        );
+    });
+}
 
 module.exports = { typeDefs, resolvers };
