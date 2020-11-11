@@ -45,7 +45,10 @@ const resolvers = {
                     [args.month, args.year], 
                     (error, results) => {
 
-                        if (error) { reject(error); }
+                        if (error) { 
+                            console.error(valueOf(error));
+                            reject(error); 
+                        }
 
                         results.rows.forEach((expense) => {
                             expense.date.setDate(expense.date.getDate() + 1);
